@@ -7,6 +7,7 @@ import { PerformanceReview } from './PerformanceReview';
 import { Payroll } from './Payroll';
 import { Attendance } from './Attendance';
 import { Task } from './Task';
+import { Department } from './Department';
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
@@ -39,4 +40,5 @@ export {
   Payroll,
   Attendance,
   Task,
+  Department,
 };
