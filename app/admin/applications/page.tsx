@@ -57,7 +57,9 @@ export default function AdminApplicationsPage() {
       });
       if (!res.ok) throw new Error("Failed to update application");
       const updated = await res.json();
-      setApplications(applications.map((a) => (a._id === updated._id ? updated : a)));
+      setApplications(
+        applications.map((a) => (a._id === updated._id ? updated : a))
+      );
       setShowModal(false);
     } catch (err: any) {
       setError(err.message || "Error");
@@ -88,10 +90,16 @@ export default function AdminApplicationsPage() {
             <tbody>
               {applications.map((app) => (
                 <tr key={app._id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4">{app.firstName} {app.lastName}</td>
+                  <td className="py-2 px-4">
+                    {app.firstName} {app.lastName}
+                  </td>
                   <td className="py-2 px-4">{app.email}</td>
                   <td className="py-2 px-4 capitalize">{app.status}</td>
-                  <td className="py-2 px-4">{app.createdAt ? new Date(app.createdAt).toLocaleDateString() : ""}</td>
+                  <td className="py-2 px-4">
+                    {app.createdAt
+                      ? new Date(app.createdAt).toLocaleDateString()
+                      : ""}
+                  </td>
                   <td className="py-2 px-4">
                     <button
                       className="text-blue-600 hover:underline mr-2"
@@ -127,12 +135,16 @@ export default function AdminApplicationsPage() {
                   className="border px-3 py-2 rounded w-full"
                 >
                   {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+                    <option key={opt} value={opt}>
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block mb-1 font-medium">Calendly Invite Link (optional)</label>
+                <label className="block mb-1 font-medium">
+                  Calendly Invite Link (optional)
+                </label>
                 <input
                   type="url"
                   value={calendly}

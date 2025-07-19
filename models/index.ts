@@ -1,18 +1,22 @@
-import mongoose from 'mongoose';
-import { Job } from './Job';
-import { Application } from './Application';
-import { Employee } from './Employee';
-import { Admin } from './Admin';
-import { PerformanceReview } from './PerformanceReview';
-import { Payroll } from './Payroll';
-import { Attendance } from './Attendance';
-import { Task } from './Task';
-import { Department } from './Department';
+import mongoose from "mongoose";
+import { Job } from "./Job";
+import { Applicant } from "./Applicant";
+import { Employee } from "./Employee";
+import { Admin } from "./Admin";
+import { PerformanceReview } from "./PerformanceReview";
+import { Payroll } from "./Payroll";
+import { Attendance } from "./Attendance";
+import { Task } from "./Task";
+import { Department } from "./Department";
+import { Interview } from "./Interview";
+import { Offer } from "./Offer";
 
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable in .env.local');
+  throw new Error(
+    "Please define the MONGODB_URI environment variable in .env.local"
+  );
 }
 
 let cached = (global as any).mongoose;
@@ -33,7 +37,7 @@ export async function dbConnect() {
 
 export {
   Job,
-  Application,
+  Applicant,
   Employee,
   Admin,
   PerformanceReview,
@@ -41,4 +45,6 @@ export {
   Attendance,
   Task,
   Department,
+  Interview,
+  Offer,
 };
