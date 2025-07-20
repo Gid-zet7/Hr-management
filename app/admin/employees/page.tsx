@@ -1,5 +1,32 @@
 "use client";
 import { useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Employee {
   _id: string;
@@ -7,15 +34,27 @@ interface Employee {
   lastName: string;
   email: string;
   phone?: string;
-  department?: string;
+  department?: string; // Will store department _id
   position?: string;
   hireDate?: string;
   salary?: number;
   employmentStatus?: string;
 }
 
+interface Department {
+  _id: string;
+  name: string;
+}
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "terminated", label: "Terminated" },
+  { value: "on_leave", label: "On Leave" },
+];
+
 export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
@@ -33,16 +72,37 @@ export default function AdminEmployeesPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Fetch employees
     fetch("/api/employees")
       .then((r) => r.json())
       .then((data) => {
         setEmployees(data);
         setLoading(false);
       });
+    // Fetch departments
+    fetch("/api/departments")
+      .then((r) => r.json())
+      .then((data) => {
+        setDepartments(data);
+      });
   }, []);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
+  }
+
+  function handleStatusChange(value: string) {
+    setForm((prev) => ({ ...prev, employmentStatus: value }));
+  }
+
+  function handleDepartmentChange(value: string) {
+    setForm((prev) => ({ ...prev, department: value }));
+  }
+
+  function getDepartmentName(deptId: string | undefined) {
+    if (!deptId) return "";
+    const dept = departments.find((d) => d._id === deptId);
+    return dept ? dept.name : "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -84,141 +144,184 @@ export default function AdminEmployeesPage() {
   return (
     <main className="max-w-4xl mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Manage Employees</h1>
-      <button
-        className="mb-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        onClick={() => setShowModal(true)}
-      >
+      <Button className="mb-6" onClick={() => setShowModal(true)}>
         Add Employee
-      </button>
+      </Button>
       {loading ? (
         <p>Loading...</p>
       ) : employees.length === 0 ? (
         <p>No employees found.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-2 px-4 text-left">Name</th>
-                <th className="py-2 px-4 text-left">Email</th>
-                <th className="py-2 px-4 text-left">Department</th>
-                <th className="py-2 px-4 text-left">Position</th>
-                <th className="py-2 px-4 text-left">Status</th>
-                <th className="py-2 px-4 text-left">Hire Date</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Position</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Hire Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {employees.map((emp) => (
-                <tr key={emp._id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4">{emp.firstName} {emp.lastName}</td>
-                  <td className="py-2 px-4">{emp.email}</td>
-                  <td className="py-2 px-4">{emp.department}</td>
-                  <td className="py-2 px-4">{emp.position}</td>
-                  <td className="py-2 px-4">{emp.employmentStatus}</td>
-                  <td className="py-2 px-4">{emp.hireDate ? new Date(emp.hireDate).toLocaleDateString() : ""}</td>
-                </tr>
+                <TableRow key={emp._id}>
+                  <TableCell>
+                    {emp.firstName} {emp.lastName}
+                  </TableCell>
+                  <TableCell>{emp.email}</TableCell>
+                  <TableCell>{getDepartmentName(emp.department)}</TableCell>
+                  <TableCell>{emp.position}</TableCell>
+                  <TableCell>{emp.employmentStatus}</TableCell>
+                  <TableCell>
+                    {emp.hireDate
+                      ? new Date(emp.hireDate).toLocaleDateString()
+                      : ""}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
-      {/* Modal for Add Employee */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded shadow-lg p-8 w-full max-w-md relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowModal(false)}
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-4">Add Employee</h2>
-            {error && <p className="text-red-600 mb-2">{error}</p>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex gap-2">
-                <input
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Employee</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new employee.
+            </DialogDescription>
+          </DialogHeader>
+          {error && <p className="text-red-600 mb-2">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex gap-2">
+              <div className="w-1/2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
                   name="firstName"
                   value={form.firstName}
                   onChange={handleChange}
                   required
                   placeholder="First Name"
-                  className="border px-3 py-2 rounded w-1/2"
                 />
-                <input
+              </div>
+              <div className="w-1/2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
                   name="lastName"
                   value={form.lastName}
                   onChange={handleChange}
                   required
                   placeholder="Last Name"
-                  className="border px-3 py-2 rounded w-1/2"
                 />
               </div>
-              <input
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
                 required
                 placeholder="Email"
-                className="border px-3 py-2 rounded w-full"
               />
-              <input
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="Phone"
-                className="border px-3 py-2 rounded w-full"
               />
-              <input
-                name="department"
+            </div>
+            <div>
+              <Label htmlFor="department">Department</Label>
+              <Select
                 value={form.department}
-                onChange={handleChange}
-                placeholder="Department"
-                className="border px-3 py-2 rounded w-full"
-              />
-              <input
+                onValueChange={handleDepartmentChange}
+              >
+                <SelectTrigger id="department" className="w-full">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.length === 0 ? (
+                    <div className="px-3 py-2 text-gray-500 text-sm">
+                      No departments found
+                    </div>
+                  ) : (
+                    departments.map((dept) => (
+                      <SelectItem key={dept._id} value={dept._id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="position">Position</Label>
+              <Input
+                id="position"
                 name="position"
                 value={form.position}
                 onChange={handleChange}
                 placeholder="Position"
-                className="border px-3 py-2 rounded w-full"
               />
-              <input
+            </div>
+            <div>
+              <Label htmlFor="hireDate">Hire Date</Label>
+              <Input
+                id="hireDate"
                 name="hireDate"
                 type="date"
                 value={form.hireDate}
                 onChange={handleChange}
-                className="border px-3 py-2 rounded w-full"
               />
-              <input
+            </div>
+            <div>
+              <Label htmlFor="salary">Salary</Label>
+              <Input
+                id="salary"
                 name="salary"
                 type="number"
                 value={form.salary}
                 onChange={handleChange}
                 placeholder="Salary"
-                className="border px-3 py-2 rounded w-full"
               />
-              <select
-                name="employmentStatus"
+            </div>
+            <div>
+              <Label htmlFor="employmentStatus">Employment Status</Label>
+              <Select
                 value={form.employmentStatus}
-                onChange={handleChange}
-                className="border px-3 py-2 rounded w-full"
+                onValueChange={handleStatusChange}
               >
-                <option value="active">Active</option>
-                <option value="terminated">Terminated</option>
-                <option value="on_leave">On Leave</option>
-              </select>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-                disabled={submitting}
-              >
+                <SelectTrigger id="employmentStatus" className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Adding..." : "Add Employee"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

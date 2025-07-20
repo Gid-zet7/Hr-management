@@ -8,6 +8,37 @@ import {
   FaBuilding,
   FaSearch,
 } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface Department {
   _id: string;
@@ -157,17 +188,18 @@ export default function DepartmentsPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow-md p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -187,89 +219,78 @@ export default function DepartmentsPage() {
               Manage company departments and organizational structure
             </p>
           </div>
-          <button
+          <Button
             onClick={() => {
               setEditingDepartment(null);
               setFormData({ name: "", description: "" });
               setShowCreateModal(true);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center transition-colors shadow-lg"
+            className="flex items-center gap-2"
           >
-            <FaPlus className="mr-2" />
+            <FaPlus />
             Add Department
-          </button>
+          </Button>
         </div>
 
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-              <div className="flex items-center">
-                <FaBuilding className="text-blue-600 text-2xl mr-3" />
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FaBuilding className="text-blue-600 text-2xl" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Total Departments
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <CardDescription>Total Departments</CardDescription>
+                  <CardTitle className="text-2xl">
                     {stats.summary.totalDepartments}
-                  </p>
+                  </CardTitle>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-              <div className="flex items-center">
-                <FaUsers className="text-green-600 text-2xl mr-3" />
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FaUsers className="text-green-600 text-2xl" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Total Employees
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <CardDescription>Total Employees</CardDescription>
+                  <CardTitle className="text-2xl">
                     {stats.summary.totalEmployees}
-                  </p>
+                  </CardTitle>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
-              <div className="flex items-center">
-                <FaUsers className="text-yellow-600 text-2xl mr-3" />
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FaUsers className="text-yellow-600 text-2xl" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Active Departments
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <CardDescription>Active Departments</CardDescription>
+                  <CardTitle className="text-2xl">
                     {stats.summary.departmentsWithEmployees}
-                  </p>
+                  </CardTitle>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
-              <div className="flex items-center">
-                <FaUsers className="text-purple-600 text-2xl mr-3" />
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FaUsers className="text-purple-600 text-2xl" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Avg. Employees/Dept
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <CardDescription>Avg. Employees/Dept</CardDescription>
+                  <CardTitle className="text-2xl">
                     {stats.summary.averageEmployeesPerDepartment}
-                  </p>
+                  </CardTitle>
                 </div>
-              </div>
-            </div>
+              </CardHeader>
+            </Card>
           </div>
         )}
 
         {/* Search */}
         <div className="relative mb-6">
           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
+          <Input
             type="text"
             placeholder="Search departments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="pl-10"
           />
         </div>
       </div>
@@ -281,11 +302,11 @@ export default function DepartmentsPage() {
             (d) => d._id === department._id
           );
           return (
-            <div
+            <Card
               key={department._id}
-              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              className="hover:shadow-lg transition-shadow"
             >
-              <div className="p-6">
+              <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -304,20 +325,24 @@ export default function DepartmentsPage() {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => handleEdit(department)}
-                      className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
                       title="Edit department"
+                      className="text-blue-600 hover:text-blue-800"
                     >
                       <FaEdit />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setDeleteConfirm(department._id)}
-                      className="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors"
                       title="Delete department"
+                      className="text-red-600 hover:text-red-800"
                     >
                       <FaTrash />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -349,8 +374,8 @@ export default function DepartmentsPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
@@ -367,131 +392,123 @@ export default function DepartmentsPage() {
               : "Get started by creating your first department"}
           </p>
           {!searchTerm && (
-            <button
+            <Button
               onClick={() => {
                 setEditingDepartment(null);
                 setFormData({ name: "", description: "" });
                 setShowCreateModal(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center mx-auto transition-colors"
+              className="flex items-center gap-2 mx-auto"
             >
-              <FaPlus className="mr-2" />
+              <FaPlus />
               Create First Department
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {editingDepartment
-                  ? "Edit Department"
-                  : "Create New Department"}
-              </h2>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Engineering, Marketing, HR"
-                  />
-                </div>
-
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Brief description of the department's role and responsibilities"
-                  />
-                </div>
-
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-                  >
-                    {editingDepartment
-                      ? "Update Department"
-                      : "Create Department"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setEditingDepartment(null);
-                      setFormData({ name: "", description: "" });
-                    }}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingDepartment ? "Edit Department" : "Create New Department"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingDepartment
+                ? "Update the department details below."
+                : "Fill in the details to create a new department."}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            id="department-form"
+          >
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Department Name *
+              </label>
+              <Input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="e.g., Engineering, Marketing, HR"
+              />
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+                placeholder="Brief description of the department's role and responsibilities"
+              />
+            </div>
+          </form>
+          <DialogFooter className="flex flex-row gap-2">
+            <Button type="submit" form="department-form" className="flex-1">
+              {editingDepartment ? "Update Department" : "Create Department"}
+            </Button>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingDepartment(null);
+                  setFormData({ name: "", description: "" });
+                }}
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <div className="flex items-center mb-4">
-                <div className="bg-red-100 rounded-full p-3 mr-4">
-                  <FaTrash className="text-red-600 text-xl" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Delete Department
-                  </h2>
-                  <p className="text-gray-600">This action cannot be undone.</p>
-                </div>
-              </div>
-
-              <p className="text-gray-700 mb-6">
-                Are you sure you want to delete this department? This will
-                remove it from the system.
-              </p>
-
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => handleDelete(deleteConfirm)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-                >
-                  Delete Department
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AlertDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-3">
+              <span className="bg-red-100 rounded-full p-2">
+                <FaTrash className="text-red-600 text-xl" />
+              </span>
+              Delete Department
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Are you sure you want to delete this
+              department? This will remove it from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-row gap-2">
+            <AlertDialogAction
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+            >
+              Delete Department
+            </AlertDialogAction>
+            <AlertDialogCancel
+              className="flex-1"
+              onClick={() => setDeleteConfirm(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

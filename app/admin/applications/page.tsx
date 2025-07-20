@@ -54,6 +54,12 @@ interface Job {
 }
 
 const STATUS_OPTIONS = ["applied", "interviewed", "hired", "rejected"];
+const FILTER_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "applied", label: "Applied" },
+  { value: "hired", label: "Hired" },
+  { value: "rejected", label: "Rejected" },
+];
 
 function statusColor(status: string) {
   switch (status) {
@@ -94,6 +100,9 @@ export default function AdminApplicationsPage() {
   const [interviewer, setInterviewer] = useState("");
   const [interviewNotes, setInterviewNotes] = useState("");
   const [schedulingInterview, setSchedulingInterview] = useState(false);
+
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     setLoading(true);
@@ -253,12 +262,35 @@ export default function AdminApplicationsPage() {
     return job ? job.title : "Unknown Job";
   }
 
+  // Filter applications based on statusFilter
+  const filteredApplications = applications.filter((app) => {
+    if (statusFilter === "all") return true;
+    return app.status === statusFilter;
+  });
+
   return (
     <main className="max-w-5xl mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Manage Applications</h1>
+      <div className="mb-4 flex items-center gap-4">
+        <Label htmlFor="status-filter" className="mr-2">
+          Filter by Status:
+        </Label>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger id="status-filter" className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FILTER_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       {loading ? (
         <p>Loading...</p>
-      ) : applications.length === 0 ? (
+      ) : filteredApplications.length === 0 ? (
         <p>No applications found.</p>
       ) : (
         <div className="w-full overflow-x-auto rounded-lg border bg-background shadow-sm">
@@ -274,7 +306,7 @@ export default function AdminApplicationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {applications.map((app) => (
+              {filteredApplications.map((app) => (
                 <TableRow key={app._id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="font-medium">
