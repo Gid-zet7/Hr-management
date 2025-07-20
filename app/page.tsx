@@ -1,6 +1,15 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { demoJob } from "@/lib/demo";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface Job {
   _id: string;
@@ -13,6 +22,7 @@ interface Job {
     | string;
   location?: string;
   description?: string;
+  status: "open" | "closed";
 }
 
 export default function Home() {
@@ -27,6 +37,17 @@ export default function Home() {
         setLoading(false);
       });
   }, []);
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "open":
+        return "secondary";
+      case "closed":
+        return "closed";
+      default:
+        return "secondary";
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-white">
@@ -52,7 +73,7 @@ export default function Home() {
 
       {/* Job Board Section */}
       <main id="jobs" className="flex-1 py-16 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold mb-8 text-blue-900 text-center">
             Current Job Openings
           </h2>
@@ -63,13 +84,39 @@ export default function Home() {
               No jobs available at this time.
             </p>
           ) : (
-            <ul className="grid md:grid-cols-2 gap-8">
+            <ul className="grid md:grid-cols-3 gap-8">
               {jobs.map((job) => (
-                <li
-                  key={job._id}
-                  className="bg-white p-6 rounded-xl shadow hover:shadow-xl border border-blue-100 transition flex flex-col justify-between"
-                >
-                  <div>
+                <li key={job._id} className="">
+                  <Card className="hover:shadow-md">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        {job.title}
+                      </CardTitle>
+                      <Badge variant={getStatusVariant(job.status)}>
+                        {job.status}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-gray-600 mb-2 text-sm">
+                        {typeof job.department === "object" &&
+                        job.department !== null &&
+                        "name" in job.department
+                          ? job.department.name
+                          : "No Department"}{" "}
+                        | {job.location}
+                      </div>
+                      <p className="mb-4 text-gray-700 text-sm">
+                        {job.description?.slice(0, 120)}...
+                      </p>
+                      <Link
+                        href={`/apply/${job._id}`}
+                        className="mt-2 inline-block px-4 py-2 bg-black text-white rounded-md hover:bg-blue-700 hover:ease-in-out hover:duration-300 font-medium text-center w-full"
+                      >
+                        Apply Now
+                      </Link>
+                    </CardContent>
+                  </Card>
+                  {/* <div>
                     <h3 className="text-xl font-semibold text-blue-800 mb-1">
                       {job.title}
                     </h3>
@@ -90,7 +137,7 @@ export default function Home() {
                     className="mt-2 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium text-center"
                   >
                     Apply Now
-                  </Link>
+                  </Link> */}
                 </li>
               ))}
             </ul>

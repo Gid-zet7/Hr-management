@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { Calendar } from "@/components/ui/calendar";
 import { useEffect, useState } from "react";
 import {
   BarChart,
@@ -26,6 +27,24 @@ import {
   FaPhone,
   FaFileAlt,
 } from "react-icons/fa";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Job {
   _id: string;
@@ -82,6 +101,28 @@ interface RecentApplicant {
   };
 }
 
+interface Interview {
+  _id: string;
+  applicant: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  jobId: {
+    _id: string;
+    title: string;
+    department?: {
+      _id: string;
+      name: string;
+    };
+  };
+  date: string;
+  time: string;
+  type: string;
+  status: string;
+}
+
 const SIDEBAR_LINKS = [
   {
     href: "/admin",
@@ -135,6 +176,7 @@ const COLORS = [
 ];
 
 export default function AdminDashboard() {
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -144,6 +186,7 @@ export default function AdminDashboard() {
   const [recentApplicants, setRecentApplicants] = useState<RecentApplicant[]>(
     []
   );
+  const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -156,6 +199,7 @@ export default function AdminDashboard() {
         attendance,
         payroll,
         recentApplicants,
+        interviews,
       ] = await Promise.all([
         fetch("/api/jobs").then((r) => r.json()),
         fetch("/api/applications").then((r) => r.json()),
@@ -166,6 +210,7 @@ export default function AdminDashboard() {
         fetch("/api/applications")
           .then((r) => r.json())
           .then((data) => data.slice(0, 6)), // Get latest 6
+        fetch("/api/interviews").then((r) => r.json()),
       ]);
       setJobs(jobs);
       setApplications(applications);
@@ -174,6 +219,7 @@ export default function AdminDashboard() {
       setAttendance(attendance);
       setPayroll(payroll);
       setRecentApplicants(recentApplicants);
+      setInterviews(interviews);
       setLoading(false);
     }
     fetchAll();
@@ -228,262 +274,371 @@ export default function AdminDashboard() {
     },
   ];
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
       case "applied":
-        return "bg-blue-100 text-blue-800";
+        return "secondary";
       case "interviewed":
-        return "bg-yellow-100 text-yellow-800";
+        return "outline";
       case "offer_sent":
-        return "bg-purple-100 text-purple-800";
+        return "default";
       case "hired":
-        return "bg-green-100 text-green-800";
+        return "default";
       case "rejected":
-        return "bg-red-100 text-red-800";
+        return "destructive";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "secondary";
     }
   };
 
-  return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-100/60 via-white to-blue-50 font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white/80 backdrop-blur-lg border-r border-blue-100 min-h-screen p-6 flex flex-col sticky top-0 shadow-xl z-10">
-        <div className="flex items-center mb-10">
-          <div className="bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-2xl mr-3 shadow">
-            A
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        {/* <aside className="w-64 bg-card border-r min-h-screen p-6 flex flex-col sticky top-0">
+          <Skeleton className="h-10 w-32 mb-10" />
+          <div className="space-y-2">
+            {SIDEBAR_LINKS.map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
           </div>
-          <span className="text-xl font-extrabold text-blue-900 tracking-tight">
-            Admin
-          </span>
+        </aside> */}
+        <div className="flex-1 p-6">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full" />
+            ))}
+          </div>
         </div>
-        <nav className="flex-1 space-y-2">
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      {/* <aside className="hidden md:flex w-64 bg-card border-r min-h-screen p-6 flex-col sticky top-0">
+        <div className="text-2xl font-bold mb-10">Admin</div>
+        <nav className="space-y-2">
           {SIDEBAR_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-100 hover:text-blue-700 font-medium transition"
+              className="flex items-center px-4 py-2 rounded-md hover:bg-muted transition"
             >
               {link.icon}
               {link.label}
             </Link>
           ))}
         </nav>
-        <div className="mt-10 text-xs text-gray-400 text-center">
-          &copy; {new Date().getFullYear()} Acme HR
-        </div>
-      </aside>
+      </aside> */}
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Topbar */}
-        <header className="flex items-center justify-between px-8 py-6 bg-white/70 backdrop-blur border-b border-blue-100 shadow-sm sticky top-0 z-10">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-blue-900">
-              Dashboard
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">Welcome back, Admin!</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 font-bold text-lg">
-              A
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 p-6 md:p-12">
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <>
-              {/* Analytics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 flex flex-col items-center border-t-4 border-blue-600">
-                  <FaBriefcase className="text-blue-600 text-3xl mb-2" />
-                  <div className="text-3xl font-extrabold text-blue-900">
-                    {jobs.length}
-                  </div>
-                  <div className="text-gray-600">Jobs</div>
+        <main className="flex-1 p-4 sm:p-6 md:p-8 lg:p-12 bg-[#F9FAFB]">
+          {/* Responsive grid for analytics cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Jobs</CardTitle>
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex justify-center items-center ">
+                  <FaBriefcase className="h-4 w-4 text-blue-400" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{jobs.length}</div>
+                <p className="text-xs text-muted-foreground">
                   <Link
                     href="/admin/jobs"
-                    className="mt-2 text-blue-600 underline font-medium"
+                    className="text-primary hover:underline"
                   >
                     Manage Jobs
                   </Link>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Applications
+                </CardTitle>
+                <div className="w-12 h-12 bg-fuchsia-100 rounded-full flex justify-center items-center">
+                  <FaClipboardList className="h-4 w-4 text-fuchsia-400" />
                 </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 flex flex-col items-center border-t-4 border-green-500">
-                  <FaClipboardList className="text-green-500 text-3xl mb-2" />
-                  <div className="text-3xl font-extrabold text-green-700">
-                    {applications.length}
-                  </div>
-                  <div className="text-gray-600">Applications</div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{applications.length}</div>
+                <p className="text-xs text-muted-foreground">
                   <Link
                     href="/admin/applications"
-                    className="mt-2 text-green-600 underline font-medium"
+                    className="text-primary hover:underline"
                   >
                     Manage Applications
                   </Link>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Employees</CardTitle>
+                <div className="w-12 h-12 bg-green-100 rounded-full flex justify-center items-center">
+                  <FaUserFriends className="h-4 w-4 text-green-400" />
                 </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 flex flex-col items-center border-t-4 border-purple-500">
-                  <FaUserFriends className="text-purple-500 text-3xl mb-2" />
-                  <div className="text-3xl font-extrabold text-purple-700">
-                    {employees.length}
-                  </div>
-                  <div className="text-gray-600">Employees</div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{employees.length}</div>
+                <p className="text-xs text-muted-foreground">
                   <Link
                     href="/admin/employees"
-                    className="mt-2 text-purple-600 underline font-medium"
+                    className="text-primary hover:underline"
                   >
                     Manage Employees
                   </Link>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Payroll Total
+                </CardTitle>
+                <div className="w-12 h-12 bg-yellow-100 rounded-full flex justify-center items-center">
+                  <FaMoneyBillWave className="h-4 w-4 text-yellow-500" />
                 </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 flex flex-col items-center border-t-4 border-yellow-500">
-                  <FaMoneyBillWave className="text-yellow-500 text-3xl mb-2" />
-                  <div className="text-3xl font-extrabold text-yellow-700">
-                    {payrollTotal.toLocaleString()}
-                  </div>
-                  <div className="text-gray-600">Payroll Total</div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {payrollTotal.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
                   <Link
                     href="/admin/payrolls"
-                    className="mt-2 text-yellow-600 underline font-medium"
+                    className="text-primary hover:underline"
                   >
                     Manage Payrolls
                   </Link>
-                </div>
-              </div>
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-              {/* Recent Applicants Table */}
-              <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-8 mb-10">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-semibold text-xl text-blue-900">
-                    Recent Applications
-                  </h2>
-                  <Link
-                    href="/admin/applications"
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold shadow"
-                  >
-                    View All Applications
-                  </Link>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-blue-50">
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Applicant
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Job Position
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Department
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Status
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Applied Date
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
+          {/* Responsive grid for Calendar and Recent Applicants */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+            {/* Recent Applicants Table */}
+            <div className="col-span-1 lg:col-span-2">
+              <Card className="h-full">
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                      <CardTitle>Recent Applications</CardTitle>
+                      <CardDescription>
+                        Latest job applications received
+                      </CardDescription>
+                    </div>
+                    <Button asChild>
+                      <Link href="/admin/applications">
+                        View All Applications
+                      </Link>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Applicant</TableHead>
+                        <TableHead>Job Position</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Applied Date</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {recentApplicants.length === 0 ? (
-                        <tr>
-                          <td
+                        <TableRow>
+                          <TableCell
                             colSpan={6}
-                            className="py-8 text-center text-gray-500"
+                            className="text-center text-muted-foreground py-8"
                           >
                             No recent applications
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ) : (
                         recentApplicants.map((applicant) => (
-                          <tr
-                            key={applicant._id}
-                            className="border-b hover:bg-blue-50 transition"
-                          >
-                            <td className="py-3 px-4">
+                          <TableRow key={applicant._id}>
+                            <TableCell>
                               <div>
-                                <div className="font-medium text-gray-900">
+                                <div className="font-medium">
                                   {applicant.firstName} {applicant.lastName}
                                 </div>
-                                <div className="text-gray-600 text-xs flex items-center mt-1">
-                                  <FaEnvelope className="mr-1" />
+                                <div className="text-sm text-muted-foreground flex items-center mt-1">
+                                  <FaEnvelope className="mr-1 h-3 w-3" />
                                   {applicant.email}
                                 </div>
                                 {applicant.phone && (
-                                  <div className="text-gray-600 text-xs flex items-center mt-1">
-                                    <FaPhone className="mr-1" />
+                                  <div className="text-sm text-muted-foreground flex items-center mt-1">
+                                    <FaPhone className="mr-1 h-3 w-3" />
                                     {applicant.phone}
                                   </div>
                                 )}
                               </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="font-medium text-gray-900">
-                                {applicant.jobId?.title || "N/A"}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-gray-600">
-                                {applicant.jobId?.department?.name ||
-                                  "No Department"}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                  applicant.status
-                                )}`}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {applicant.jobId?.title || "N/A"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {applicant.jobId?.department?.name ||
+                                "No Department"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStatusVariant(applicant.status)}
                               >
                                 {applicant.status.charAt(0).toUpperCase() +
                                   applicant.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-gray-600">
-                                {new Date(
-                                  applicant.createdAt
-                                ).toLocaleDateString()}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(
+                                applicant.createdAt
+                              ).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
                               <div className="flex space-x-2">
                                 {applicant.resumeUrl && (
-                                  <a
-                                    href={applicant.resumeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition-colors"
-                                    title="View Resume"
-                                  >
-                                    <FaFileAlt />
-                                  </a>
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a
+                                      href={applicant.resumeUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="View Resume"
+                                    >
+                                      <FaFileAlt className="h-4 w-4" />
+                                    </a>
+                                  </Button>
                                 )}
-                                <Link
-                                  href={`/admin/jobs/${applicant.jobId?._id}/applicants`}
-                                  className="text-purple-600 hover:text-purple-800 p-1 rounded hover:bg-purple-100 transition-colors"
-                                  title="View Job Applicants"
-                                >
-                                  <FaEye />
-                                </Link>
+                                <Button variant="ghost" size="sm" asChild>
+                                  <Link
+                                    href={`/admin/jobs/${applicant.jobId?._id}/applicants`}
+                                    title="View Job Applicants"
+                                  >
+                                    <FaEye className="h-4 w-4" />
+                                  </Link>
+                                </Button>
                               </div>
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))
                       )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Charts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6">
-                  <h2 className="font-semibold mb-4 text-blue-900">
-                    Applications per Job
-                  </h2>
+            {/* Calendar */}
+            <div className="col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Calendar</CardTitle>
+                  <CardDescription>View and select dates</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="rounded-md border shadow-sm"
+                    captionLayout="dropdown"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Interview Table */}
+          <div className="mb-10">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <CardTitle>Recent Interviews</CardTitle>
+                    <CardDescription>
+                      Latest scheduled interviews
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Applicant</TableHead>
+                      <TableHead>Job</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {interviews.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center text-muted-foreground py-8"
+                        >
+                          No interviews scheduled
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      interviews.slice(0, 5).map((interview) => (
+                        <TableRow key={interview._id}>
+                          <TableCell>
+                            {interview.applicant?.firstName}{" "}
+                            {interview.applicant?.lastName}
+                            <div className="text-xs text-muted-foreground">
+                              {interview.applicant?.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {interview.jobId?.title || "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            {interview.date
+                              ? new Date(interview.date).toLocaleDateString()
+                              : ""}
+                          </TableCell>
+                          <TableCell>{interview.time}</TableCell>
+                          <TableCell className="capitalize">
+                            {interview.type}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {interview.status.charAt(0).toUpperCase() +
+                                interview.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Responsive grid for charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mb-12">
+            <div className="col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Applications per Job</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={applicationsPerJob}>
                       <XAxis
@@ -496,27 +651,35 @@ export default function AdminDashboard() {
                       />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="applications" fill="#2563eb" />
+                      <Bar dataKey="applications" fill="hsl(var(--primary))" />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6">
-                  <h2 className="font-semibold mb-4 text-blue-900">
-                    Employee Growth
-                  </h2>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Employee Growth</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={employeeGrowthData}>
                       <XAxis dataKey="month" />
                       <YAxis allowDecimals={false} />
                       <Tooltip />
-                      <Bar dataKey="count" fill="#10b981" />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6">
-                  <h2 className="font-semibold mb-4 text-blue-900">
-                    Attendance Summary
-                  </h2>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Attendance Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie
@@ -539,11 +702,15 @@ export default function AdminDashboard() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6">
-                  <h2 className="font-semibold mb-4 text-blue-900">
-                    Performance Distribution
-                  </h2>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Performance Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie
@@ -566,80 +733,76 @@ export default function AdminDashboard() {
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Job Management Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <CardTitle>Job Management</CardTitle>
+                  <CardDescription>
+                    Manage job postings and their status
+                  </CardDescription>
                 </div>
+                <Button asChild>
+                  <Link href="/admin/jobs/new">Add New Job</Link>
+                </Button>
               </div>
-              {/* Job Management Table */}
-              <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-8 mb-10">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-semibold text-xl text-blue-900">
-                    Job Management
-                  </h2>
-                  <Link
-                    href="/admin/jobs/new"
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 font-semibold shadow"
-                  >
-                    Add New Job
-                  </Link>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-blue-50">
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Title
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Department
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Location
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Status
-                        </th>
-                        <th className="py-3 px-4 text-left font-semibold">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jobs.map((job) => (
-                        <tr
-                          key={job._id}
-                          className="border-b hover:bg-blue-50 transition"
-                        >
-                          <td className="py-2 px-4">{job.title}</td>
-                          <td className="py-2 px-4">
-                            {typeof job.department === "object" &&
-                            job.department !== null &&
-                            "name" in job.department
-                              ? job.department.name
-                              : "No Department"}
-                          </td>
-                          <td className="py-2 px-4">{job.location}</td>
-                          <td className="py-2 px-4">{job.status}</td>
-                          <td className="py-2 px-4 space-x-2">
-                            <Link
-                              href={`/admin/jobs/edit/${job._id}`}
-                              className="text-blue-600 hover:underline"
-                            >
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {jobs.map((job) => (
+                    <TableRow key={job._id}>
+                      <TableCell className="font-medium">{job.title}</TableCell>
+                      <TableCell>
+                        {typeof job.department === "object" &&
+                        job.department !== null &&
+                        "name" in job.department
+                          ? job.department.name
+                          : "No Department"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {job.location}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{job.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={`/admin/jobs/edit/${job._id}`}>
                               Edit
                             </Link>
-                            <button
-                              className="text-red-600 hover:underline"
-                              onClick={() => alert("Delete not implemented")}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => alert("Delete not implemented")}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </main>
       </div>
     </div>

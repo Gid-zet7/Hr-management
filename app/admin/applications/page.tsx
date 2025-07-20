@@ -1,5 +1,35 @@
 "use client";
 import { useEffect, useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Application {
   _id: string;
@@ -25,10 +55,25 @@ interface Job {
 
 const STATUS_OPTIONS = ["applied", "interviewed", "hired", "rejected"];
 
+function statusColor(status: string) {
+  switch (status) {
+    case "applied":
+      return "bg-blue-100 text-blue-800";
+    case "interviewed":
+      return "bg-yellow-100 text-yellow-800";
+    case "hired":
+      return "bg-green-100 text-green-800";
+    case "rejected":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+}
+
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Application | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showInterviewModal, setShowInterviewModal] = useState(false);
@@ -51,6 +96,7 @@ export default function AdminApplicationsPage() {
   const [schedulingInterview, setSchedulingInterview] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/applications")
       .then((r) => r.json())
       .then((data) => {
@@ -102,10 +148,6 @@ export default function AdminApplicationsPage() {
         body: JSON.stringify({ status, calendlyInvite: calendly }),
       });
       if (!res.ok) throw new Error("Failed to update application");
-      const updated = await res.json();
-      setApplications(
-        applications.map((a) => (a._id === updated._id ? updated : a))
-      );
       setShowModal(false);
     } catch (err: any) {
       setError(err.message || "Error");
@@ -143,14 +185,7 @@ export default function AdminApplicationsPage() {
         throw new Error(errorData.error || "Failed to schedule interview");
       }
 
-      const result = await res.json();
-
-      // Update the application status to "interviewed"
-      setApplications(
-        applications.map((a) =>
-          a._id === selected._id ? { ...a, status: "interviewed" } : a
-        )
-      );
+      await res.json();
 
       setShowInterviewModal(false);
       alert("Interview scheduled successfully! Email invitation sent.");
@@ -159,6 +194,58 @@ export default function AdminApplicationsPage() {
     } finally {
       setSchedulingInterview(false);
     }
+  }
+
+  async function handleSendOffer(app: Application) {
+    // Update status to offer_sent
+    await fetch(`/api/applications/${app._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "offer_sent" }),
+    });
+    // Send offer email
+    await fetch("/api/mail/mailgun", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emailTo: app.email,
+        subject: `Offer Letter - ${getJobTitle(app.jobId)}`,
+        htmlContent: `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'><h2 style='color: #2563eb;'>Offer Letter</h2><p>Dear ${
+          app.firstName
+        } ${
+          app.lastName
+        },</p><p>Congratulations! We are pleased to offer you the position of <strong>${getJobTitle(
+          app.jobId
+        )}</strong> at our company. Please reply to this email to confirm your acceptance.</p><p>Best regards,<br>HR Team</p></div>`,
+      }),
+    });
+    alert("Offer letter sent!");
+  }
+
+  async function handleReject(app: Application) {
+    // Update status to rejected
+    await fetch(`/api/applications/${app._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "rejected" }),
+    });
+    // Send rejection email
+    await fetch("/api/mail/mailgun", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        emailTo: app.email,
+        subject: `Application Update - ${getJobTitle(app.jobId)}`,
+        htmlContent: `<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'><h2 style='color: #ef4444;'>Application Update</h2><p>Dear ${
+          app.firstName
+        } ${
+          app.lastName
+        },</p><p>Thank you for interviewing for the <strong>${getJobTitle(
+          app.jobId
+        )}</strong> position. We appreciate your time and interest, but we have decided not to move forward with your application. We wish you the best in your job search.</p><p>Best regards,<br>HR Team</p></div>`,
+      }),
+    });
+    alert("Rejection email sent.");
   }
 
   function getJobTitle(jobId: string): string {
@@ -174,245 +261,300 @@ export default function AdminApplicationsPage() {
       ) : applications.length === 0 ? (
         <p>No applications found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-2 px-4 text-left">Name</th>
-                <th className="py-2 px-4 text-left">Email</th>
-                <th className="py-2 px-4 text-left">Job</th>
-                <th className="py-2 px-4 text-left">Status</th>
-                <th className="py-2 px-4 text-left">Applied</th>
-                <th className="py-2 px-4 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="w-full overflow-x-auto rounded-lg border bg-background shadow-sm">
+          <Table className="min-w-[700px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Job</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Applied</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {applications.map((app) => (
-                <tr key={app._id} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-4">
-                    {app.firstName} {app.lastName}
-                  </td>
-                  <td className="py-2 px-4">{app.email}</td>
-                  <td className="py-2 px-4">{getJobTitle(app.jobId)}</td>
-                  <td className="py-2 px-4 capitalize">{app.status}</td>
-                  <td className="py-2 px-4">
+                <TableRow key={app._id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="font-medium">
+                      {app.firstName} {app.lastName}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="block truncate max-w-[180px]">
+                      {app.email}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="block truncate max-w-[180px]">
+                      {getJobTitle(app.jobId)}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={cn(
+                        "capitalize",
+                        statusColor(app.status || "")
+                      )}
+                    >
+                      {app.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     {app.createdAt
                       ? new Date(app.createdAt).toLocaleDateString()
                       : ""}
-                  </td>
-                  <td className="py-2 px-4">
-                    <button
-                      className="text-blue-600 hover:underline mr-2"
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mr-2"
                       onClick={() => openModal(app)}
                     >
                       Manage
-                    </button>
+                    </Button>
                     {app.status === "applied" && (
-                      <button
-                        className="text-green-600 hover:underline"
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => openInterviewModal(app)}
                       >
                         Invite for Interview
-                      </button>
+                      </Button>
                     )}
-                  </td>
-                </tr>
+                    {app.status === "interviewed" && (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="mr-2"
+                          onClick={() => handleSendOffer(app)}
+                        >
+                          Send Offer
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleReject(app)}
+                        >
+                          Reject
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
       {/* Modal for status update and interview invite */}
-      {showModal && selected && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded shadow-lg p-8 w-full max-w-md relative">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowModal(false)}
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-4">Manage Application</h2>
-            {error && <p className="text-red-600 mb-2">{error}</p>}
-            <form onSubmit={handleUpdate} className="space-y-4">
-              <div>
-                <label className="block mb-1 font-medium">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="border px-3 py-2 rounded w-full"
-                >
+      <Dialog open={showModal && !!selected} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Application</DialogTitle>
+            <DialogDescription>
+              Update the status or send a Calendly invite link.
+            </DialogDescription>
+          </DialogHeader>
+          {error && <p className="text-red-600 mb-2">{error}</p>}
+          <form
+            onSubmit={handleUpdate}
+            className="space-y-4"
+            id="update-application-form"
+          >
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger id="status" className="mt-1 w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
                   {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt} value={opt}>
+                    <SelectItem key={opt} value={opt}>
                       {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">
-                  Calendly Invite Link (optional)
-                </label>
-                <input
-                  type="url"
-                  value={calendly}
-                  onChange={(e) => setCalendly(e.target.value)}
-                  placeholder="https://calendly.com/your-link"
-                  className="border px-3 py-2 rounded w-full"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-                disabled={submitting}
-              >
-                {submitting ? "Updating..." : "Update Application"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="calendly">Calendly Invite Link (optional)</Label>
+              <Input
+                id="calendly"
+                type="url"
+                value={calendly}
+                onChange={(e) => setCalendly(e.target.value)}
+                placeholder="https://calendly.com/your-link"
+              />
+            </div>
+          </form>
+          <DialogFooter>
+            <Button
+              type="submit"
+              form="update-application-form"
+              disabled={submitting}
+            >
+              {submitting ? "Updating..." : "Update Application"}
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Interview Scheduling Modal */}
-      {showInterviewModal && selected && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded shadow-lg p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowInterviewModal(false)}
-            >
-              &times;
-            </button>
-            <h2 className="text-xl font-bold mb-4">Schedule Interview</h2>
-            <p className="text-gray-600 mb-4">
-              Scheduling interview for {selected.firstName} {selected.lastName}{" "}
-              - {getJobTitle(selected.jobId)}
-            </p>
-            {error && <p className="text-red-600 mb-2">{error}</p>}
-
-            <form onSubmit={handleScheduleInterview} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 font-medium">Date *</label>
-                  <input
-                    type="date"
-                    value={interviewDate}
-                    onChange={(e) => setInterviewDate(e.target.value)}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">Time *</label>
-                  <input
-                    type="time"
-                    value={interviewTime}
-                    onChange={(e) => setInterviewTime(e.target.value)}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 font-medium">
-                    Duration (minutes)
-                  </label>
-                  <select
-                    value={interviewDuration}
-                    onChange={(e) =>
-                      setInterviewDuration(Number(e.target.value))
-                    }
-                    className="border px-3 py-2 rounded w-full"
-                  >
-                    <option value={30}>30 minutes</option>
-                    <option value={45}>45 minutes</option>
-                    <option value={60}>60 minutes</option>
-                    <option value={90}>90 minutes</option>
-                    <option value={120}>120 minutes</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">Type</label>
-                  <select
-                    value={interviewType}
-                    onChange={(e) =>
-                      setInterviewType(
-                        e.target.value as "phone" | "video" | "in-person"
-                      )
-                    }
-                    className="border px-3 py-2 rounded w-full"
-                  >
-                    <option value="phone">Phone</option>
-                    <option value="video">Video</option>
-                    <option value="in-person">In-Person</option>
-                  </select>
-                </div>
-              </div>
-
-              {interviewType === "in-person" && (
-                <div>
-                  <label className="block mb-1 font-medium">Location</label>
-                  <input
-                    type="text"
-                    value={interviewLocation}
-                    onChange={(e) => setInterviewLocation(e.target.value)}
-                    placeholder="Office address or meeting room"
-                    className="border px-3 py-2 rounded w-full"
-                  />
-                </div>
-              )}
-
-              {interviewType === "video" && (
-                <div>
-                  <label className="block mb-1 font-medium">Video Link</label>
-                  <input
-                    type="url"
-                    value={interviewVideoLink}
-                    onChange={(e) => setInterviewVideoLink(e.target.value)}
-                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                    className="border px-3 py-2 rounded w-full"
-                  />
-                </div>
-              )}
-
+      <Dialog
+        open={showInterviewModal && !!selected}
+        onOpenChange={setShowInterviewModal}
+      >
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogDescription>
+              Scheduling interview for {selected?.firstName}{" "}
+              {selected?.lastName} - {selected && getJobTitle(selected.jobId)}
+            </DialogDescription>
+          </DialogHeader>
+          {error && <p className="text-red-600 mb-2">{error}</p>}
+          <form
+            onSubmit={handleScheduleInterview}
+            className="space-y-4"
+            id="schedule-interview-form"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block mb-1 font-medium">Interviewer</label>
-                <input
+                <Label htmlFor="interview-date">Date *</Label>
+                <Input
+                  id="interview-date"
+                  type="date"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="interview-time">Time *</Label>
+                <Input
+                  id="interview-time"
+                  type="time"
+                  value={interviewTime}
+                  onChange={(e) => setInterviewTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="interview-duration">Duration (minutes)</Label>
+                <Select
+                  value={String(interviewDuration)}
+                  onValueChange={(val) => setInterviewDuration(Number(val))}
+                >
+                  <SelectTrigger
+                    id="interview-duration"
+                    className="mt-1 w-full"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="45">45 minutes</SelectItem>
+                    <SelectItem value="60">60 minutes</SelectItem>
+                    <SelectItem value="90">90 minutes</SelectItem>
+                    <SelectItem value="120">120 minutes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="interview-type">Type</Label>
+                <Select
+                  value={interviewType}
+                  onValueChange={(val) =>
+                    setInterviewType(val as "phone" | "video" | "in-person")
+                  }
+                >
+                  <SelectTrigger id="interview-type" className="mt-1 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="phone">Phone</SelectItem>
+                    <SelectItem value="video">Video</SelectItem>
+                    <SelectItem value="in-person">In-Person</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {interviewType === "in-person" && (
+              <div>
+                <Label htmlFor="interview-location">Location</Label>
+                <Input
+                  id="interview-location"
                   type="text"
-                  value={interviewer}
-                  onChange={(e) => setInterviewer(e.target.value)}
-                  placeholder="Interviewer name"
-                  className="border px-3 py-2 rounded w-full"
+                  value={interviewLocation}
+                  onChange={(e) => setInterviewLocation(e.target.value)}
+                  placeholder="Office address or meeting room"
                 />
               </div>
-
+            )}
+            {interviewType === "video" && (
               <div>
-                <label className="block mb-1 font-medium">Notes</label>
-                <textarea
-                  value={interviewNotes}
-                  onChange={(e) => setInterviewNotes(e.target.value)}
-                  placeholder="Additional notes for the candidate"
-                  rows={3}
-                  className="border px-3 py-2 rounded w-full"
+                <Label htmlFor="interview-video-link">Video Link</Label>
+                <Input
+                  id="interview-video-link"
+                  type="url"
+                  value={interviewVideoLink}
+                  onChange={(e) => setInterviewVideoLink(e.target.value)}
+                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
                 />
               </div>
-
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full"
-                disabled={schedulingInterview}
-              >
-                {schedulingInterview
-                  ? "Scheduling..."
-                  : "Schedule Interview & Send Email"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+            )}
+            <div>
+              <Label htmlFor="interviewer">Interviewer</Label>
+              <Input
+                id="interviewer"
+                type="text"
+                value={interviewer}
+                onChange={(e) => setInterviewer(e.target.value)}
+                placeholder="Interviewer name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="interview-notes">Notes</Label>
+              <Textarea
+                id="interview-notes"
+                value={interviewNotes}
+                onChange={(e) => setInterviewNotes(e.target.value)}
+                placeholder="Additional notes for the candidate"
+                rows={3}
+              />
+            </div>
+          </form>
+          <DialogFooter>
+            <Button
+              type="submit"
+              form="schedule-interview-form"
+              disabled={schedulingInterview}
+              variant="default"
+            >
+              {schedulingInterview
+                ? "Scheduling..."
+                : "Schedule Interview & Send Email"}
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
